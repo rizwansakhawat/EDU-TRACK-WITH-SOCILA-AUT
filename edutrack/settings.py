@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -44,8 +47,12 @@ INSTALLED_APPS = [
     
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.openid_connect',
     
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    'rest_framework.authtoken', 
 
     
     "rest_framework",
@@ -66,9 +73,12 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+REST_USE_JWT = True
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication"
     ),
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -167,3 +177,22 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 AUTH_USER_MODEL = "accounts.User"
+
+# 967682172249898
+# 57b95b21e9602644428d3d2024472f07
+
+SOCIALACCOUNT_PROVIDERS = {
+    'facebook': {
+        # 'METHOD': 'oauth2',
+        'APP':{
+                "client_id": os.environ.get("OAUTH_FACEBOOK_CLIENT_ID"),
+                "secret":os.environ.get("OAUTH_FACEBOOK_SECRET"),
+                "key": ""
+            },
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+    }
+}
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
