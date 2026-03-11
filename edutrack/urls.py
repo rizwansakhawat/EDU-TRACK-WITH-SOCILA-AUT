@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
+from rest_framework_simplejwt.views import ( 
     TokenObtainPairView,
     TokenRefreshView,)
 
@@ -26,6 +26,8 @@ urlpatterns = [
     
     #apps urls 
     path('', include('accounts.urls') ),
+    path('inst/', include('core.urls')),
+    
     
     
     # authentication urls
