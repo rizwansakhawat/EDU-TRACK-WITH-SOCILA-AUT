@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from .serializers import EnrollmentSerializer, PaymentSerializer
-from .models import Enrollment,Payment
+from .serializers import EnrollmentSerializer
+from .models import Enrollment
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from accounts.permissions import IsStudent, IsSuperAdmin, IsInstructor, IsOrgAdmin
@@ -35,17 +35,4 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
         
-        
-        
-class PaymentViewSet(viewsets.ModelViewSet):
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
-
-        return Payment.objects.filter(
-            enrollment__course__institute__organization=user.organization
-        )
-        
-        

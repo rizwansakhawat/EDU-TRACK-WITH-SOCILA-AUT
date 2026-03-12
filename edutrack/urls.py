@@ -26,7 +26,8 @@ urlpatterns = [
     
     #apps urls 
     path('', include('accounts.urls') ),
-    path('inst/', include('core.urls')),
+    path('payments/', include('payments.urls')),
+    # path('instructors/', include('core.urls')),
     
     
     

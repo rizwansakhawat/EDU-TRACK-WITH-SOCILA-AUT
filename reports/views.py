@@ -1,13 +1,12 @@
-from django.shortcuts import render
 from rest_framework import viewsets
-from .serializers import CertificateSerializer
-from .models import Certificate
 from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
+from .serializers import CertificateSerializer
+from .models import Certificate
 
 
-class CertificateViewSet(viewsets.ModelViewSet):
+class CertificateViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only: certificates are auto-generated on course completion."""
     serializer_class = CertificateSerializer
     permission_classes = [IsAuthenticated]
 

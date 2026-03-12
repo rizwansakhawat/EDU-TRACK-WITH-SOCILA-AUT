@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Enrollment, Payment
+from .models import Enrollment
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
@@ -17,9 +17,4 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                 "You are already enrolled in this course.")
         return data
     
-    
-class PaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Payment
-        fields = "__all__"
+  

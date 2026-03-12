@@ -14,7 +14,7 @@ class InstituteViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        if user.role == "SUPEADMIN":
+        if user.role == "SUPERADMIN":
             return Institute.objects.all()
           
         return Institute.objects.filter(organization= user.organization)

@@ -23,7 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1)pi5onmlbcosk4g9-0hv$59te0cf56a2=m(szd_zs4c0+4m_u'
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-key")  # Use a default for development, but require it in production
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")  
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Redirect URLs after Stripe Checkout
+STRIPE_SUCCESS_URL = os.getenv("STRIPE_SUCCESS_URL", "http://localhost:8000/payments/success/")
+STRIPE_CANCEL_URL = os.getenv("STRIPE_CANCEL_URL", "http://localhost:8000/payments/cancel/")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -47,7 +54,7 @@ INSTALLED_APPS = [
     
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
-    'allauth.socialaccount.providers.facebook',
+    # 'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.openid_connect',
     
     "dj_rest_auth",
@@ -61,6 +68,7 @@ INSTALLED_APPS = [
     "core",
     "courses",
     "enrollments",
+    "payments",
     "reports",
 ]
 SITE_ID = 1
@@ -178,21 +186,18 @@ STATIC_URL = 'static/'
 
 AUTH_USER_MODEL = "accounts.User"
 
-# 967682172249898
-# 57b95b21e9602644428d3d2024472f07
-
-SOCIALACCOUNT_PROVIDERS = {
-    'facebook': {
-        # 'METHOD': 'oauth2',
-        'APP':{
-                "client_id": os.environ.get("OAUTH_FACEBOOK_CLIENT_ID"),
-                "secret":os.environ.get("OAUTH_FACEBOOK_SECRET"),
-                "key": ""
-            },
-        'SCOPE': ['email', 'public_profile'],
-        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
-    }
-}
+# SOCIALACCOUNT_PROVIDERS = {
+#     'facebook': {
+#         # 'METHOD': 'oauth2',
+#         'APP':{
+#                 "client_id": os.environ.get("OAUTH_FACEBOOK_CLIENT_ID"),
+#                 "secret":os.environ.get("OAUTH_FACEBOOK_SECRET"),
+#                 "key": ""
+#             },
+#         'SCOPE': ['email', 'public_profile'],
+#         'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+#     }
+# }
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
