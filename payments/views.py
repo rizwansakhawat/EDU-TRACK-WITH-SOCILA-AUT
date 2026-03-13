@@ -1,5 +1,6 @@
 import stripe
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -96,6 +97,7 @@ class CreateCheckoutSession(APIView):
         )
 
 
+
 @method_decorator(csrf_exempt, name="dispatch")
 class StripeWebhookView(APIView):
     """
@@ -106,10 +108,25 @@ class StripeWebhookView(APIView):
     authentication_classes = []
     permission_classes = []
 
+    def get(self, request):
+        return Response(
+            {
+                "detail": "Stripe webhook endpoint is reachable. Stripe should send POST requests here.",
+                "status": "ready",
+            },
+            status=status.HTTP_200_OK,
+        )
+
     def post(self, request):
         payload = request.body
         sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
         webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+        if not webhook_secret:
+            return Response(
+                {"detail": "Stripe webhook secret is not configured."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         try:
             event = stripe.Webhook.construct_event(
@@ -123,20 +140,79 @@ class StripeWebhookView(APIView):
 
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            enrollment_id = session["metadata"].get("enrollment_id")
+            enrollment_id = session.get("metadata", {}).get("enrollment_id")
             payment_intent = session.get("payment_intent")
 
-            # Mark payment as completed
-            Payment.objects.filter(
-                enrollment_id=enrollment_id,
-                stripe_payment_intent=payment_intent,
-                status="pending",
-            ).update(status="completed", paid_at=timezone.now())
+            if not enrollment_id:
+                return Response({"status": "ok"}, status=status.HTTP_200_OK)
 
-            # Activate the enrollment
-            Enrollment.objects.filter(pk=enrollment_id).update(status="active")
+            with transaction.atomic():
+                pending_qs = Payment.objects.select_for_update().filter(
+                    enrollment_id=enrollment_id,
+                    status="pending",
+                )
+
+                payment = None
+
+                if payment_intent:
+                    payment = pending_qs.filter(
+                        stripe_payment_intent=payment_intent
+                    ).order_by("-created_at").first()
+
+                if payment is None:
+                    payment = pending_qs.filter(
+                        stripe_payment_intent__isnull=True
+                    ).order_by("-created_at").first()
+
+                if payment is None:
+                    payment = pending_qs.order_by("-created_at").first()
+
+                if payment:
+                    payment.status = "completed"
+                    payment.paid_at = timezone.now()
+                    if payment_intent and not payment.stripe_payment_intent:
+                        payment.stripe_payment_intent = payment_intent
+                    payment.save(
+                        update_fields=["status", "paid_at", "stripe_payment_intent"]
+                    )
+
+                Enrollment.objects.filter(pk=enrollment_id).update(status="active")
+                Certificate.objects.get_or_create(enrollment_id=enrollment_id)
 
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+
+
+
+class PaymentSuccessView(APIView):
+    """User-facing success endpoint for Stripe Checkout redirect."""
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response(
+            {
+                "detail": "Payment flow completed. Verification is handled by Stripe webhook.",
+                "status": "success",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PaymentCancelView(APIView):
+    """User-facing cancel endpoint for Stripe Checkout redirect."""
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response(
+            {
+                "detail": "Payment was canceled. You can retry checkout.",
+                "status": "canceled",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 

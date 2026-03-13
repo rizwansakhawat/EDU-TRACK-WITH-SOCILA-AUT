@@ -15,4 +15,4 @@ class Payment(models.Model):
     
     def __str__(self):
         return f"{self.enrollment.student} - {self.enrollment.course}"
-# Create your models here.
+
